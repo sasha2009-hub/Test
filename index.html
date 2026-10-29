@@ -346,7 +346,7 @@ function result(){
   <ul class="why">${why.map(x=>`<li>На вопрос «${x.q.replace(/[.?]$/,'')}» ты выбрал(а): <b>${x.t}</b>.</li>`).join('')}</ul>
   <p>По темпераменту ты — <b>${r.temp.toLowerCase()}</b>: ${TEMP_TXT[r.temp]} ${r.temp.split(' ')[0]===p.temp.split(' ')[0]?'Это совпадает с темпераментом персонажа.':`У самого персонажа темперамент — ${p.temp.toLowerCase()}, так что ты его версия со своим характером.`}</p>
   <div class="match">${top3.map(k=>`<div class="mrow"><span>${P[k].name}</span><div class="bar"><i style="width:${r.pct(k)}%;background:${P[k].hue}"></i></div><span>${r.pct(k)}%</span></div>`).join('')}</div>
-  <div class="status" id="st">Отправляю результат организатору…</div>
+  <div class="status"><b>Сделай скриншот этого экрана</b> (вместе с именем вверху) и отправь организатору в чат команды.</div>
  </div>
 
  <div class="card">
@@ -355,7 +355,6 @@ function result(){
   </details>
  </div>`;
  window.scrollTo(0,0);
- send(r,top);
 }
 
 function send(r,top){
