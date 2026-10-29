@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Кто ты в команде спасателей</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@400;500;700&display=swap">
+<style>
+/* Layout: одна колонка-«карточка вызова», один вопрос на экран, прогресс-шкала сверху */
+:root{
+  --bg:#f3f1ec; --paper:#fffdf8; --ink:#1e2433; --muted:#5d6475; --line:#dcd8cf;
+  --accent:#e2532d; --accent-ink:#ffffff; --soft:#f7e4dc;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#151925; --paper:#1e2433; --ink:#eef0f5; --muted:#a4abbd; --line:#323a4e;
+  --accent:#ff7a52; --accent-ink:#1a1010; --soft:#3a2721; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(26px,6vw,38px);font-weight:800}
+h2{font-size:clamp(20px,4.6vw,26px);font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+.eyebrow{font:700 12px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.muted{color:var(--muted)}
+label.f{display:flex;flex-direction:column;gap:8px;font-weight:700}
+input[type=text]{font:inherit;padding:14px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=text]:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+button{font:700 16px var(--body);cursor:pointer;border-radius:12px;border:0;padding:14px 20px}
+.primary{background:var(--accent);color:var(--accent-ink)}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.ghost{background:transparent;color:var(--muted);border:1.5px solid var(--line)}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.progress{display:flex;align-items:center;gap:12px;font:700 13px var(--body);color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{flex:1;height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{text-align:left;font:500 16px/1.4 var(--body);background:var(--bg);color:var(--ink);border:1.5px solid var(--line);padding:14px 16px}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:var(--soft)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between}
+.hero{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.emblem{width:160px;height:160px;flex:none;max-width:100%}
+.pic{display:block;flex:none}
+.pic img{width:100%;height:100%;object-fit:contain;display:block}
+.pic svg{width:100%;height:100%;display:block}
+.mini{width:56px;height:56px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{font:700 13px var(--body);padding:6px 12px;border-radius:999px;background:var(--soft);color:var(--ink)}
+ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.why li b{font-weight:700}
+.match{display:flex;flex-direction:column;gap:8px}
+.mrow{display:grid;grid-template-columns:110px 1fr 44px;gap:10px;align-items:center;font-size:14px;font-variant-numeric:tabular-nums}
+.mrow .bar{height:10px}
+.status{font-size:14px;padding:10px 14px;border-radius:10px;background:var(--bg)}
+details{border-top:1px solid var(--line);padding-top:12px}
+details summary{cursor:pointer;font-weight:700}
+.all{display:flex;flex-direction:column;gap:16px;margin-top:14px}
+.all .p{display:flex;gap:14px;align-items:flex-start}
+.all .p div{min-width:0;display:flex;flex-direction:column;gap:4px}
+@media (prefers-reduced-motion: reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ====== Куда приходят результаты (письмом через FormSubmit) ====== */
+const SEND_URL = "https://formsubmit.co/ajax/riwqqp@gmail.com";
+/* ================================================================= */
+
+const P = {
+ R:{name:"Райдер",hue:"#c8324a",icon:"net",temp:"Сангвиник (с флегматичной выдержкой)",belbin:"Координатор",
+  who:"Лидер, который держит в голове всю картину и раздаёт задачи по силам каждого.",
+  team:"В команде ты тот, кто собирает людей, превращает хаос в план и спокойно говорит «так, делаем вот так». Тебе доверяют, потому что ты не паникуешь и видишь, кто в чём хорош.",
+  plus:"спокойствие под давлением, умение делегировать, видение цели",
+  minus:"можешь взять на себя слишком много и не попросить помощи"},
+ C:{name:"Гонщик",hue:"#d9772b",icon:"target",temp:"Холерик",belbin:"Мотиватор (Shaper)",
+  who:"Собранный, ответственный, всегда готов первым броситься в дело.",
+  team:"Ты двигатель команды: держишь темп, следишь за договорённостями и не даёшь всем расслабиться. Порядок и дисциплина для тебя — способ, чтобы всё получилось.",
+  plus:"ответственность, энергия, решительность, верность команде",
+  minus:"бываешь слишком строгим к себе и другим, тяжело переживаешь ошибки"},
+ M:{name:"Маршал",hue:"#1f9a8a",icon:"heart",temp:"Сангвиник",belbin:"Душа команды (Team Worker)",
+  who:"Тёплый, весёлый и искренний — даже когда всё идёт не по плану.",
+  team:"Ты держишь атмосферу: разряжаешь напряжение шуткой, поддерживаешь тех, кто раскис, и никогда не бросаешь своих. Без тебя команда работала бы, но была бы гораздо холоднее.",
+  plus:"эмпатия, юмор, энтузиазм, умение сплотить",
+  minus:"иногда торопишься и действуешь на эмоциях, переживаешь из-за промахов"},
+ S:{name:"Скай",hue:"#7a4fd1",icon:"cloud",temp:"Сангвиник",belbin:"Исследователь ресурсов",
+  who:"Смелая, лёгкая на подъём оптимистка, которая любит новое.",
+  team:"Ты смотришь на ситуацию «сверху», быстро находишь людей, информацию и неожиданные возможности. Ты первой загораешься новой идеей и заражаешь этим остальных.",
+  plus:"оптимизм, смелость, гибкость, широкий кругозор",
+  minus:"интерес может угаснуть, когда новизна прошла и началась рутина"},
+ Ro:{name:"Рокки",hue:"#b88a12",icon:"bulb",temp:"Флегматик с меланхолическими чертами",belbin:"Генератор идей (Plant)",
+  who:"Изобретатель, который из того, что под рукой, соберёт решение.",
+  team:"Ты придумываешь нестандартные ходы, когда все уже сдались. Видишь пользу там, где другие видят мусор, и любишь, когда задачу можно решить хитро и экономно.",
+  plus:"изобретательность, практичность, спокойный ум",
+  minus:"можешь уйти в свою идею и хуже слышать других; избегаешь того, что неприятно лично тебе"},
+ Ru:{name:"Крепыш",hue:"#56627a",icon:"cube",temp:"Флегматик",belbin:"Реализатор (Implementer)",
+  who:"Надёжный и добрый, тот, на ком держится реальная работа.",
+  team:"Ты не любишь лишнего шума, но если взялся — сделаешь. Тебе важны комфорт, стабильность и понятная задача. Команда знает: твоя часть будет готова.",
+  plus:"надёжность, трудолюбие, доброта, устойчивость",
+  minus:"не любишь резких перемен; иногда нужен пинок, чтобы начать"},
+ Z:{name:"Зума",hue:"#1b8fbd",icon:"wave",temp:"Флегматик",belbin:"Специалист",
+  who:"Расслабленный, спокойный и уверенный в своей стихии.",
+  team:"Ты не суетишься там, где все паникуют. Твоё «спокойно, разберёмся» реально успокаивает. В своей области ты эксперт, и именно тогда ты незаменим.",
+  plus:"хладнокровие, лёгкость, юмор, экспертиза в своём деле",
+  minus:"можешь расслабиться слишком сильно и недооценить срочность"},
+ E:{name:"Эверест",hue:"#3a46b5",icon:"peak",temp:"Холерик",belbin:"Доводчик (Completer)",
+  who:"Энергичная и упорная — не сдаётся, пока не дойдёт до вершины.",
+  team:"Ты влетаешь в любую задачу с полной отдачей и доводишь её до конца, даже в самых тяжёлых условиях. Тебе важно доказать, что ты на многое способна.",
+  plus:"упорство, энергия, выносливость, самостоятельность",
+  minus:"нетерпеливость; болезненно реагируешь, когда тебя недооценивают"},
+ T:{name:"Трекер",hue:"#6b7d2a",icon:"ear",temp:"Меланхолик",belbin:"Аналитик (Monitor Evaluator)",
+  who:"Внимательный, чуткий, замечает то, что пропускают все остальные.",
+  team:"Ты слышишь детали, взвешиваешь риски и предупреждаешь об ошибках до того, как они случились. Ты не всегда самый громкий, но твоё мнение спасает команду от глупостей.",
+  plus:"наблюдательность, осторожность, глубина, точность",
+  minus:"тревожность и сомнения; можешь долго решаться"}
+};
+
+/* w — баллы персонажам, e — экстраверсия (+) / интроверсия (−), n — эмоциональность (+) / спокойствие (−) */
+const Q = [
+ {q:"Команде дали проект с дедлайном через неделю. Что ты делаешь в первый вечер?",o:[
+  {t:"Расписываю, кто что делает, и закидываю план в общий чат",w:{R:2,C:1},e:1,n:-1},
+  {t:"Сразу берусь за самую сложную часть, чтобы никто не тормозил",w:{C:2,E:1},e:1,n:1},
+  {t:"Ищу, как такое уже делали другие, и кидаю всем полезные ссылки",w:{S:2,T:1},e:1,n:0},
+  {t:"Придумываю необычный формат, которого не будет ни у кого",w:{Ro:2,S:1},e:-1,n:0},
+  {t:"Честно? Сначала отдыхаю — неделя это много",w:{Z:2,Ru:1},e:0,n:-1}]},
+ {q:"На встрече двое из команды начали спорить на повышенных тонах.",o:[
+  {t:"Шучу, чтобы разрядить обстановку",w:{M:2,Z:1},e:1,n:0},
+  {t:"Спокойно предлагаю выслушать обоих по очереди",w:{R:2,T:1},e:0,n:-1},
+  {t:"Прямо говорю, кто, по-моему, прав, и предлагаю двигаться дальше",w:{C:2,E:1},e:1,n:1},
+  {t:"Молчу на встрече, а потом пишу каждому отдельно",w:{T:2,Ru:1},e:-1,n:1}]},
+ {q:"Ты в незнакомом городе, телефон сел, до важной встречи час.",o:[
+  {t:"Спрашиваю дорогу у прохожих — заодно с кем-нибудь познакомлюсь",w:{S:2,M:1},e:1,n:-1},
+  {t:"Ориентируюсь по вывескам, остановкам и картам на стендах",w:{T:2,Ro:1},e:-1,n:-1},
+  {t:"Иду быстрым шагом туда, где вроде бы центр, разберусь по ходу",w:{E:2,C:1},e:1,n:1},
+  {t:"Захожу в кафе, ставлю телефон на зарядку, пью чай — успею",w:{Z:2,Ru:1},e:0,n:-1},
+  {t:"Сначала немного паникую, но потом всё-таки нахожу выход",w:{M:2,T:1},e:0,n:1}]},
+ {q:"Какая роль тебе комфортнее всего в групповом проекте?",o:[
+  {t:"Держать общую картину и распределять задачи",w:{R:2,C:1},e:1,n:-1},
+  {t:"Придумывать, как сделать иначе и интереснее",w:{Ro:2,S:1},e:0,n:0},
+  {t:"Делать свою часть на совесть и в срок",w:{Ru:2,E:1},e:-1,n:-1},
+  {t:"Проверять всё и находить ошибки",w:{T:2,C:1},e:-1,n:1},
+  {t:"Поддерживать настроение, чтобы никто не раскис",w:{M:2,Z:1},e:1,n:0}]},
+ {q:"Вы с друзьями застряли в лифте.",o:[
+  {t:"Жму кнопку вызова и чётко объясняю диспетчеру, где мы",w:{C:2,R:1},e:1,n:0},
+  {t:"Начинаю рассказывать истории, чтобы никто не нервничал",w:{M:2,S:1},e:1,n:0},
+  {t:"Сажусь на пол — всё равно ждать",w:{Z:2,Ru:1},e:-1,n:-1},
+  {t:"Осматриваю, нет ли способа открыть двери самим",w:{Ro:2,E:1},e:0,n:0},
+  {t:"Не показываю вида, но мне реально не по себе",w:{T:2,M:1},e:-1,n:1}]},
+ {q:"Тебе предложили вести мероприятие на 200 человек. Раньше ты такого не делал(а).",o:[
+  {t:"Сразу соглашаюсь — это же круто!",w:{S:2,E:1},e:1,n:0},
+  {t:"Соглашаюсь, если будет понятный план и кто за что отвечает",w:{R:2,C:1},e:0,n:-1},
+  {t:"Соглашаюсь, но несколько дней переживаю, вдруг облажаюсь",w:{M:2,T:1},e:1,n:1},
+  {t:"Лучше помогу за кулисами — там я полезнее",w:{Ru:2,Ro:1},e:-1,n:0},
+  {t:"Ну, если надо — ладно, разберусь на месте",w:{Z:2,E:1},e:0,n:-1}]},
+ {q:"Из-за твоей ошибки команда потеряла время.",o:[
+  {t:"Сразу признаю и предлагаю, как исправить",w:{R:2,C:1},e:0,n:-1},
+  {t:"Долго себя корю и прокручиваю это в голове",w:{T:2,C:1},e:-1,n:1},
+  {t:"Шучу над собой — со всеми бывает",w:{M:2,Z:1},e:1,n:-1},
+  {t:"Молча остаюсь подольше и всё переделываю",w:{Ru:2,E:1},e:-1,n:0},
+  {t:"Придумываю обходной путь, чтобы наверстать",w:{Ro:2,S:1},e:0,n:0}]},
+ {q:"Свободный выходной без планов. Что выберешь?",o:[
+  {t:"Что-нибудь с адреналином: горы, лыжи, скалодром",w:{E:2,S:1},e:1,n:0},
+  {t:"Вкусно поесть и поваляться",w:{Ru:2,Z:1},e:-1,n:-1},
+  {t:"Покопаться руками: починить, собрать, смастерить",w:{Ro:2,Ru:1},e:-1,n:-1},
+  {t:"Пляж или бассейн — и чтобы без спешки",w:{Z:2,M:1},e:0,n:-1},
+  {t:"Собрать друзей и что-нибудь организовать",w:{R:2,M:1},e:1,n:0},
+  {t:"Тренировка — режим не нарушаю",w:{C:2,E:1},e:0,n:0}]},
+ {q:"Как ты относишься к правилам и инструкциям?",o:[
+  {t:"Правила — основа. Если все им следуют, всё работает",w:{C:2,Ru:1},e:0,n:0},
+  {t:"Они полезны, но если ситуация требует — меняю их",w:{R:2,S:1},e:1,n:-1},
+  {t:"Читаю инструкцию, только когда что-то уже сломалось",w:{Z:2,Ro:1},e:0,n:-1},
+  {t:"Сначала изучу всё досконально, потом действую",w:{T:2,C:1},e:-1,n:0},
+  {t:"Особо о них не думаю, действую по ощущениям",w:{M:2,E:1},e:1,n:1}]},
+ {q:"В команде новичок, который всё делает не так.",o:[
+  {t:"Объясняю, как у нас принято, и проверяю, что он понял",w:{C:2,R:1},e:1,n:0},
+  {t:"Беру под крыло, подбадриваю и поддерживаю",w:{M:2,S:1},e:1,n:0},
+  {t:"Даю задачу попроще и смотрю, в чём он силён",w:{R:2,T:1},e:0,n:-1},
+  {t:"Не вмешиваюсь — у меня своих задач хватает",w:{Ru:2,Z:1},e:-1,n:-1},
+  {t:"Показываю свой лайфхак, как сделать быстрее",w:{Ro:2,E:1},e:0,n:0}]},
+ {q:"Какая фраза больше всего про тебя?",o:[
+  {t:"«Главное — собрать всех и понять, что делаем»",w:{R:2,Ro:1},e:1,n:-1},
+  {t:"«Дайте мне задачу — я справлюсь»",w:{C:2,E:1},e:1,n:1},
+  {t:"«Из того, что под рукой, можно сделать почти всё»",w:{Ro:2,Ru:1},e:-1,n:-1},
+  {t:"«Спокойно, всё будет хорошо»",w:{Z:2,M:1},e:0,n:-1},
+  {t:"«Давайте посмотрим на это шире»",w:{S:2,T:1},e:1,n:0},
+  {t:"«Подождите, я тут кое-что заметил(а)…»",w:{T:2,S:1},e:-1,n:1}]},
+ {q:"Тебе нужно сделать скучное и долгое задание.",o:[
+  {t:"Включаю музыку и делаю не спеша",w:{Z:2,Ru:1},e:0,n:-1},
+  {t:"Делаю сразу и до конца, чтобы не висело",w:{C:2,E:1},e:0,n:0},
+  {t:"Думаю, как это упростить или автоматизировать",w:{Ro:2,R:1},e:-1,n:0},
+  {t:"Зову кого-нибудь делать вместе — так веселее",w:{M:2,S:1},e:1,n:0},
+  {t:"Откладываю, а потом сижу ночью и делаю идеально",w:{T:2,E:1},e:-1,n:1}]},
+ {q:"Что тебя больше всего бесит в командной работе?",o:[
+  {t:"Когда никто не берёт ответственность",w:{R:2,C:1},e:1,n:0},
+  {t:"Когда срывают договорённости и сроки",w:{C:2,T:1},e:0,n:1},
+  {t:"Когда все слишком серьёзные и нет атмосферы",w:{M:2,Z:1},e:1,n:0},
+  {t:"Когда не слушают новые идеи",w:{Ro:2,S:1},e:0,n:1},
+  {t:"Когда все суетятся без толку",w:{Z:2,Ru:1},e:-1,n:-1},
+  {t:"Когда меня недооценивают",w:{E:2,S:1},e:1,n:1}]},
+ {q:"Ты узнаёшь, что друг попал в беду, а ты на другом конце города.",o:[
+  {t:"Сразу еду, по дороге звоню и выясняю, что нужно",w:{C:2,E:1},e:1,n:1},
+  {t:"Подключаю тех, кто ближе, и координирую всё по телефону",w:{R:2,S:1},e:1,n:-1},
+  {t:"Сначала подробно расспрашиваю, что случилось, чтобы помочь правильно",w:{T:2,R:1},e:-1,n:0},
+  {t:"Пишу что-то тёплое, чтобы поддержать, и выезжаю",w:{M:2,Ru:1},e:1,n:1},
+  {t:"Думаю, что можно сделать удалённо: найти, заказать, придумать",w:{Ro:2,Z:1},e:-1,n:-1}]},
+ {q:"Ты на большой высоте: крыша, колесо обозрения, скалодром.",o:[
+  {t:"Обожаю! Вид сверху — лучшее",w:{S:2,E:1},e:1,n:-1},
+  {t:"Нормально, держусь спокойно",w:{Z:2,R:1},e:0,n:-1},
+  {t:"Страшновато, но если надо команде — иду",w:{M:2,C:1},e:0,n:1},
+  {t:"Предпочитаю твёрдую землю под ногами",w:{Ru:2,T:1},e:-1,n:1},
+  {t:"Сначала проверю страховку, потом уже радуюсь",w:{T:2,C:1},e:-1,n:0}]},
+ {q:"Как ты принимаешь важные решения?",o:[
+  {t:"Быстро, на интуиции",w:{S:2,E:1},e:1,n:1},
+  {t:"Взвешиваю все «за» и «против»",w:{T:2,R:1},e:-1,n:0},
+  {t:"Советуюсь с людьми, потом решаю сам(а)",w:{R:2,M:1},e:1,n:-1},
+  {t:"Смотрю, как практичнее и экономнее",w:{Ro:2,Ru:1},e:-1,n:-1},
+  {t:"Не спешу — правильное решение придёт само",w:{Z:2,Ru:1},e:0,n:-1},
+  {t:"Решаю чётко и уже не передумываю",w:{C:2,E:1},e:0,n:0}]},
+ {q:"Команда проиграла важный конкурс. Что ты делаешь в тот же вечер?",o:[
+  {t:"Разбираю, что пошло не так, чтобы в следующий раз выиграть",w:{T:2,R:1},e:-1,n:0},
+  {t:"Зову всех куда-нибудь, чтобы не грустить поодиночке",w:{M:2,S:1},e:1,n:0},
+  {t:"Злюсь, но завтра тренируюсь в два раза больше",w:{E:2,C:1},e:0,n:1},
+  {t:"Ну проиграли и проиграли — будет ещё шанс",w:{Z:2,Ru:1},e:0,n:-1},
+  {t:"Уже придумываю, что сделаем иначе в следующий раз",w:{Ro:2,E:1},e:0,n:0}]}
+];
+
+/* ===== Эмблемы: оригинальные значки-символы ===== */
+const ICON = {
+ net:'<circle cx="60" cy="40" r="7"/><circle cx="38" cy="74" r="7"/><circle cx="82" cy="74" r="7"/><path d="M60 47 41 68M60 47l19 21M45 74h30" stroke-width="5" fill="none"/>',
+ target:'<circle cx="60" cy="60" r="28" fill="none" stroke-width="6"/><circle cx="60" cy="60" r="14" fill="none" stroke-width="6"/><circle cx="60" cy="60" r="4"/>',
+ heart:'<path d="M60 88C30 68 32 42 48 39c6-1 10 3 12 7 2-4 6-8 12-7 16 3 18 29-12 49z"/>',
+ cloud:'<path d="M40 80c-9 0-15-6-15-14s6-13 13-14c2-10 10-16 20-16 11 0 19 8 20 18 8 0 14 6 14 13s-6 13-14 13z"/>',
+ bulb:'<path d="M60 30c-14 0-23 10-23 22 0 9 6 14 9 19 2 3 2 6 2 9h24c0-3 0-6 2-9 3-5 9-10 9-19 0-12-9-22-23-22z"/><rect x="49" y="84" width="22" height="6" rx="3"/>',
+ cube:'<path d="M60 30 86 44v30L60 88 34 74V44z" fill="none" stroke-width="6" stroke-linejoin="round"/><path d="M34 44l26 14 26-14M60 58v30" fill="none" stroke-width="6" stroke-linejoin="round"/>',
+ wave:'<path d="M26 58c8-8 14-8 22 0s14 8 22 0 14-8 22 0M26 76c8-8 14-8 22 0s14 8 22 0 14-8 22 0" fill="none" stroke-width="6" stroke-linecap="round"/>',
+ peak:'<path d="M24 86 50 42l12 18 8-12 26 38z"/>',
+ ear:'<circle cx="44" cy="60" r="7"/><path d="M58 44a22 22 0 0 1 0 32M70 34a36 36 0 0 1 0 52" fill="none" stroke-width="6" stroke-linecap="round"/>'
+};
+/* Картинки персонажей: файлы лежат рядом с index.html. Если файла нет — показывается эмблема. */
+const IMG={R:"ryder.png",C:"chase.png",M:"marshall.png",S:"skye.png",Ro:"rocky.png",Ru:"rubble.png",Z:"zuma.png",E:"everest.png",T:"tracker.png"};
+function pic(k,cls){
+ return `<span class="pic ${cls||''}"><img src="${IMG[k]}" alt="${P[k].name}" onerror="this.parentNode.innerHTML=window.emblem('${k}','${cls||''}')"></span>`;
+}
+window.emblem=emblem;
+function emblem(k,cls){
+ const p=P[k];
+ return `<svg class="${cls||''}" viewBox="0 0 120 120" role="img" aria-label="Эмблема: ${p.name}">
+  <circle cx="60" cy="60" r="56" fill="${p.hue}"/>
+  <circle cx="60" cy="60" r="48" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="2" stroke-dasharray="4 5"/>
+  <g fill="#ffffff" stroke="#ffffff">${ICON[p.icon]}</g></svg>`;
+}
+
+/* ===== Подсчёт ===== */
+const MAX={}; Object.keys(P).forEach(k=>MAX[k]=Q.reduce((s,q)=>s+Math.max(0,...q.o.map(o=>o.w[k]||0)),0));
+function score(ans){
+ const s={},prim={}; Object.keys(P).forEach(k=>{s[k]=0;prim[k]=0});
+ let e=0,n=0;
+ ans.forEach((ai,qi)=>{const o=Q[qi].o[ai];for(const k in o.w){s[k]+=o.w[k];if(o.w[k]===2)prim[k]++}e+=o.e;n+=o.n});
+ const pct=k=>Math.round(100*s[k]/MAX[k]);
+ const order=Object.keys(P).sort((a,b)=>pct(b)-pct(a)||prim[b]-prim[a]||s[b]-s[a]);
+ const temp = e>0 ? (n>0?"Холерик":"Сангвиник") : (n>0?"Меланхолик":"Флегматик");
+ return {order,pct,e,n,temp};
+}
+const TEMP_TXT={
+ "Сангвиник":"общительный и при этом эмоционально устойчивый: быстро включаешься, легко переключаешься и редко застреваешь в переживаниях.",
+ "Холерик":"энергичный и эмоциональный: реагируешь быстро и ярко, загораешься и тащишь за собой, но можешь вспылить.",
+ "Флегматик":"спокойный и устойчивый: не любишь суеты, действуешь размеренно и надёжно, тебя сложно вывести из себя.",
+ "Меланхолик":"глубокий и чувствительный: замечаешь детали и тонко ощущаешь атмосферу, но склонен(на) переживать и сомневаться."
+};
+
+/* ===== Экраны ===== */
+const app=document.getElementById('app');
+let name="",ans=[],cur=0;
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function start(){
+ app.innerHTML=`
+ <div class="card">
+  <span class="eyebrow">Командный тест · ${Q.length} ситуаций</span>
+  <h1>Кто ты в команде спасателей?</h1>
+  <p class="muted">Здесь нет правильных ответов. Выбирай то, что ты <b>правда</b> сделал(а) бы, а не то, что звучит красиво. В конце узнаешь своего персонажа, темперамент и роль в команде по Белбину — и почему вышло именно так.</p>
+  <label class="f" for="nm">Твоё имя и фамилия
+   <input type="text" id="nm" autocomplete="name" placeholder="Например, Анна Смирнова" value="${esc(name)}">
+  </label>
+  <button class="primary" id="go" disabled>Начать</button>
+ </div>`;
+ const nm=document.getElementById('nm'),go=document.getElementById('go');
+ const chk=()=>{go.disabled=nm.value.trim().length<2};
+ nm.addEventListener('input',chk);chk();
+ nm.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!go.disabled)go.click()});
+ go.onclick=()=>{name=nm.value.trim();ans=[];cur=0;question()};
+}
+
+function question(){
+ const q=Q[cur];
+ app.innerHTML=`
+ <div class="progress"><span>${cur+1} / ${Q.length}</span><div class="bar"><i style="width:${100*cur/Q.length}%"></i></div></div>
+ <div class="card">
+  <h2>${q.q}</h2>
+  <div class="opts">${q.o.map((o,i)=>`<button class="opt${ans[cur]===i?' sel':''}" data-i="${i}">${o.t}</button>`).join('')}</div>
+  <div class="row">
+   <button class="ghost" id="back" ${cur===0?'hidden':''}>Назад</button>
+  </div>
+ </div>`;
+ app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+  ans[cur]=+b.dataset.i;
+  if(cur<Q.length-1){cur++;question()}else result();
+ });
+ const back=document.getElementById('back');
+ back.onclick=()=>{cur--;question()};
+ window.scrollTo(0,0);
+}
+
+function result(){
+ const r=score(ans),top=r.order[0],p=P[top];
+ // почему: ответы, которые сильнее всего тянули к победителю
+ const why=ans.map((ai,qi)=>({q:Q[qi].q,t:Q[qi].o[ai].t,w:Q[qi].o[ai].w[top]||0}))
+   .filter(x=>x.w>0).sort((a,b)=>b.w-a.w).slice(0,4);
+ const top3=r.order.slice(0,3);
+ app.innerHTML=`
+ <div class="card">
+  <span class="eyebrow">${esc(name)}, твой результат</span>
+  <div class="hero">${pic(top,'emblem')}
+   <div style="min-width:0;display:flex;flex-direction:column;gap:10px">
+    <h1>${p.name}</h1>
+    <p>${p.who}</p>
+   </div>
+  </div>
+  <div class="tags"><span class="tag">Темперамент по тесту: ${r.temp}</span><span class="tag">Белбин: ${p.belbin}</span></div>
+  <p>${p.team}</p>
+  <p><b>Сильные стороны:</b> ${p.plus}.<br><b>Зона роста:</b> ${p.minus}.</p>
+ </div>
+
+ <div class="card">
+  <h3>Почему получился именно ${p.name}</h3>
+  <ul class="why">${why.map(x=>`<li>На вопрос «${x.q.replace(/[.?]$/,'')}» ты выбрал(а): <b>${x.t}</b>.</li>`).join('')}</ul>
+  <p>По темпераменту ты — <b>${r.temp.toLowerCase()}</b>: ${TEMP_TXT[r.temp]} ${r.temp.split(' ')[0]===p.temp.split(' ')[0]?'Это совпадает с темпераментом персонажа.':`У самого персонажа темперамент — ${p.temp.toLowerCase()}, так что ты его версия со своим характером.`}</p>
+  <div class="match">${top3.map(k=>`<div class="mrow"><span>${P[k].name}</span><div class="bar"><i style="width:${r.pct(k)}%;background:${P[k].hue}"></i></div><span>${r.pct(k)}%</span></div>`).join('')}</div>
+  <div class="status" id="st">Отправляю результат организатору…</div>
+ </div>
+
+ <div class="card">
+  <details><summary>Все персонажи команды</summary>
+   <div class="all">${Object.keys(P).map(k=>`<div class="p">${pic(k,'mini')}<div><h3>${P[k].name}</h3><p class="muted">${P[k].temp} · ${P[k].belbin}</p><p>${P[k].who}</p></div></div>`).join('')}</div>
+  </details>
+ </div>`;
+ window.scrollTo(0,0);
+ send(r,top);
+}
+
+function send(r,top){
+ const st=document.getElementById('st');
+ const body={
+  _subject:'Тест: '+name+' — '+P[top].name,
+  _template:'table', _captcha:'false',
+  'Имя':name, 'Персонаж':P[top].name, 'Совпадение':r.pct(top)+'%',
+  'Второе место':P[r.order[1]].name+' ('+r.pct(r.order[1])+'%)',
+  'Темперамент':r.temp, 'Роль по Белбину':P[top].belbin,
+  'Время':new Date().toLocaleString('ru-RU'),
+  'Ответы':ans.map((ai,qi)=>(qi+1)+') '+Q[qi].o[ai].t).join('\n')
+ };
+ fetch(SEND_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)})
+  .then(r=>{if(!r.ok)throw 0;st.textContent='✓ Результат отправлен организатору.'})
+  .catch(()=>{st.textContent='Не получилось отправить результат. Сделай скриншот этого экрана и отправь организатору.'});
+}
+
+start();
+</script>
+</body>
+</html>
