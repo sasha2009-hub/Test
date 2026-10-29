@@ -72,9 +72,10 @@ details summary{cursor:pointer;font-weight:700}
 <div class="wrap" id="app"></div>
 
 <script>
-/* ====== Куда приходят результаты (письмом через FormSubmit) ====== */
-const SEND_URL = "https://formsubmit.co/ajax/riwqqp@gmail.com";
-/* ================================================================= */
+/* ====== Куда приходят результаты (Google Форма организатора) ====== */
+const SEND_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdhBWT0Rik-hZFibfDkgEXaBpuqyqIyrkicgeLNreFb_KE_FA/formResponse";
+const FIELD = "entry.1049777649";
+/* ================================================================== */
 
 const P = {
  R:{name:"Райдер",hue:"#c8324a",icon:"net",temp:"Сангвиник (с флегматичной выдержкой)",belbin:"Координатор",
@@ -359,17 +360,17 @@ function result(){
 
 function send(r,top){
  const st=document.getElementById('st');
- const body={
-  _subject:'Тест: '+name+' — '+P[top].name,
-  _template:'table', _captcha:'false',
-  'Имя':name, 'Персонаж':P[top].name, 'Совпадение':r.pct(top)+'%',
-  'Второе место':P[r.order[1]].name+' ('+r.pct(r.order[1])+'%)',
-  'Темперамент':r.temp, 'Роль по Белбину':P[top].belbin,
-  'Время':new Date().toLocaleString('ru-RU'),
-  'Ответы':ans.map((ai,qi)=>(qi+1)+') '+Q[qi].o[ai].t).join('\n')
- };
- fetch(SEND_URL,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body)})
-  .then(r=>{if(!r.ok)throw 0;st.textContent='✓ Результат отправлен организатору.'})
+ const text=[
+  'Имя: '+name,
+  'Персонаж: '+P[top].name+' ('+r.pct(top)+'%)',
+  'Второе место: '+P[r.order[1]].name+' ('+r.pct(r.order[1])+'%)',
+  'Темперамент: '+r.temp,
+  'Роль по Белбину: '+P[top].belbin,
+  'Ответы: '+ans.map((ai,qi)=>(qi+1)+') '+Q[qi].o[ai].t).join('; ')
+ ].join(' | ');
+ const body=new URLSearchParams();body.append(FIELD,text);
+ fetch(SEND_URL,{method:'POST',mode:'no-cors',body})
+  .then(()=>{st.textContent='✓ Результат отправлен организатору.'})
   .catch(()=>{st.textContent='Не получилось отправить результат. Сделай скриншот этого экрана и отправь организатору.'});
 }
 
